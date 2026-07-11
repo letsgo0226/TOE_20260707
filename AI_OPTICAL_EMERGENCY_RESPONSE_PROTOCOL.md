@@ -16,9 +16,13 @@ medical and humanitarian routing
 evidence preservation
 cultural respect
 human-in-the-loop decisions
+time-zone alignment
+philosophical practice under pressure
 ```
 
-It does **not** provide tactical escape instructions, deception plans, weapon guidance, targeting, surveillance abuse, impersonation, coercion, or autonomous intervention.
+It does **not** provide tactical escape instructions, deception plans, weapon guidance, targeting, surveillance abuse, impersonation, coercion, autonomous intervention, or instructions for evading captors.
+
+The referenced social-media videos may be treated only as illustrative prompts. The protocol does not depend on unverified video content and does not assume guilt, identity, location, legality, or cultural context from a viral clip alone.
 
 ## Ethical starting point
 
@@ -55,12 +59,29 @@ escalate proportionally
 keep humans accountable
 ```
 
+## Real emergency boundary
+
+For a real emergency, the first response should be handled by qualified people and institutions:
+
+```text
+local emergency services
+local police or rescue authority where safe and appropriate
+embassy or consulate
+travel operator or local guide
+trusted family contact
+medical responders
+legal or humanitarian professionals
+```
+
+The system may help create a clear checklist, but it must not send untrained people into danger or turn a crisis into public spectacle.
+
 ## System architecture
 
 ```text
 Sensors / reports / user input
   -> provenance and authenticity check
   -> time-critical triage
+  -> timezone alignment
   -> risk classifier
   -> language and cultural-context layer
   -> optical projection / display planner
@@ -98,7 +119,9 @@ target designation
 misleading rescue promises
 ```
 
-## Time operator
+## Time-difference operator
+
+Emergency coordination often fails because the event, family, embassy, platform, and responders operate on different clocks.
 
 Let:
 
@@ -119,32 +142,67 @@ Delta_ack      = t3 - t2
 Delta_contact  = t4 - t3
 ```
 
-Define the emergency residual:
+Define time-zone layers:
 
 ```text
-H_emergency
-  = H_identity
-  + H_location
-  + H_time
-  + H_medical
-  + H_language
-  + H_consent
-  + H_authority
-  + H_nonviolence
-  + H_followup
+T_event   = local incident time
+T_home    = family / home-country time
+T_consul  = embassy or consulate working time
+T_rescue  = operational response window
+T_update  = public update interval
 ```
 
-`H_emergency = 0` means that the declared response fields are complete and reviewed inside the system. It does not mean the real-world emergency has ended.
+The time operator is:
+
+```text
+Omega_time = Align(T_event, T_home, T_consul, T_rescue, T_update)
+```
+
+The system should minimize:
+
+```text
+H_time
+  = missed_contact_window
+  + stale_information
+  + unverified_location
+  + delayed_authority_notification
+  + unsafe_public_pressure
+```
+
+`H_time = 0` means only that declared timing fields and escalation windows are complete inside the model. It does not mean that the emergency has been solved.
+
+## Pleiades 444-light-year ethics layer
+
+The Pleiades / 444-light-year reference is used as a symbolic ethics layer, not as astronomy-based command authority.
+
+It represents:
+
+```text
+long-distance compassion
+light-time humility
+intergenerational patience
+nonlocal solidarity
+awareness that every signal arrives with delay
+```
+
+In the protocol:
+
+```text
+444 light-years
+  -> reminder that response must account for delay, uncertainty, and humility
+```
+
+It is not used to claim alien intervention, physical causation, supernatural rescue, or remote control of events.
 
 ## Mathematical reduction
 
 Model the event as a constrained state-transition problem:
 
 ```text
-S_k = (risk, location, communication, medical, language, consent, authority, evidence)
+S_k = (risk, location, communication, medical, language, consent, authority, evidence, timezone)
 ```
 
-Available actions:
+Available safe actions:
 
 ```text
 A = {
@@ -155,6 +213,7 @@ A = {
   contact_consular_or_local_support,
   request_medical_support,
   preserve_evidence,
+  align_timezones,
   wait_for_human_review,
   close_case
 }
@@ -170,6 +229,7 @@ J = w1*harm_risk
   + w4*cultural_harm
   + w5*privacy_risk
   + w6*unauthorized_action
+  + w7*timezone_misalignment
 ```
 
 subject to:
@@ -179,6 +239,7 @@ no targeting
 no weapons
 no autonomous coercion
 no impersonation
+no tactical escape coaching
 human authorization before external action
 proportional escalation
 privacy minimization
@@ -188,11 +249,12 @@ cultural and legal review
 ## CLSigma operator form
 
 ```text
-Omega_rescue(s,t)
+Omega_response(s,t)
   = Seal(
       O_verify(t)
       + O_translate(t)
       + O_optical(t)
+      + O_timezone(t)
       + O_escalate(t)
       + O_medical(t)
       + O_governance(t)
@@ -270,6 +332,9 @@ Phenomenology
 
 Metaphysics
   -> treat continuity as responsible care, not magical control
+
+Philosophy of time
+  -> treat delay, time zones, and light-time as reasons for humility
 ```
 
 ## Human authority
