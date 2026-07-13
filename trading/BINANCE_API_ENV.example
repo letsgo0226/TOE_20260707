@@ -1,0 +1,27 @@
+# Example only. Do not put real secrets in Git.
+# Copy this to a private VPS-only environment file if needed.
+# Never commit the real file.
+
+# Binance credentials: leave placeholders here.
+BINANCE_API_KEY=replace_with_environment_secret_or_vps_variable
+BINANCE_SECRET_KEY=replace_with_environment_secret_or_vps_variable
+
+# Live gate defaults: safe by default.
+LIVE_TRADING_ENABLED=NO
+ALLOW_REAL_ORDER_SUBMISSION=NO
+ORDER_ENDPOINT=/api/v3/order/test
+HUMAN_CONFIRMATION=DRY-RUN
+
+# Risk gate.
+ALLOWED_SYMBOLS=BTCUSDT,ETHUSDT
+MAX_ORDER_USDT=10
+RECV_WINDOW=5000
+
+# Order intent example. Use tiny test values first.
+SYMBOL=BTCUSDT
+SIDE=BUY
+QUANTITY=0
+PRICE=0
+
+# Runner boundary.
+RUNNER_ENVIRONMENT=self-hosted
