@@ -1,0 +1,86 @@
+name: CLSigma Binance Live Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "DRY_RUN or LIVE. Default does not submit orders."
+        required: true
+        default: "DRY_RUN"
+        type: choice
+        options:
+          - DRY_RUN
+          - LIVE
+      endpoint:
+        description: "TEST_ONLY uses /api/v3/order/test. REAL_ORDER uses /api/v3/order."
+        required: true
+        default: "TEST_ONLY"
+        type: choice
+        options:
+          - TEST_ONLY
+          - REAL_ORDER
+      symbol:
+        description: "Allowed Binance spot symbol"
+        required: true
+        default: "BTCUSDT"
+      side:
+        description: "BUY or SELL"
+        required: true
+        default: "BUY"
+        type: choice
+        options:
+          - BUY
+          - SELL
+      quantity:
+        description: "Base asset quantity. Use tiny test size first."
+        required: true
+        default: "0"
+      price:
+        description: "Limit price. Market orders are not supported."
+        required: true
+        default: "0"
+      max_order_usdt:
+        description: "Maximum notional value allowed by local risk gate."
+        required: true
+        default: "10"
+      confirmation:
+        description: "For LIVE, type LIVE-APPROVE. Otherwise blocked."
+        required: true
+        default: "DRY-RUN"
+
+concurrency:
+  group: clsigma-binance-live-gate
+  cancel-in-progress: false
+
+jobs:
+  live_gate:
+    name: Locked live-gate runner
+    runs-on: [self-hosted, binance-live]
+    environment: binance-live
+    permissions:
+      contents: read
+
+    env:
+      BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
+      BINANCE_SECRET_KEY: ${{ secrets.BINANCE_SECRET_KEY }}
+      LIVE_TRADING_ENABLED: ${{ inputs.mode == 'LIVE' && 'YES' || 'NO' }}
+      ORDER_ENDPOINT: ${{ inputs.endpoint == 'REAL_ORDER' && '/api/v3/order' || '/api/v3/order/test' }}
+      ALLOW_REAL_ORDER_SUBMISSION: ${{ inputs.endpoint == 'REAL_ORDER' && 'YES' || 'NO' }}
+      HUMAN_CONFIRMATION: ${{ inputs.confirmation }}
+      SYMBOL: ${{ inputs.symbol }}
+      SIDE: ${{ inputs.side }}
+      QUANTITY: ${{ inputs.quantity }}
+      PRICE: ${{ inputs.price }}
+      MAX_ORDER_USDT: ${{ inputs.max_order_usdt }}
+      ALLOWED_SYMBOLS: "BTCUSDT,ETHUSDT"
+      RECV_WINDOW: "5000"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python version
+        run: python3 --version
+
+      - name: Run CLSigma Binance live gate
+        run: python3 trading/binance_live_gate.py
