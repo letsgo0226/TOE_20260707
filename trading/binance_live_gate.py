@@ -11,6 +11,7 @@ Safety model:
   ALLOW_REAL_ORDER_SUBMISSION=YES
   ORDER_ENDPOINT=/api/v3/order
   RUNNER_ENVIRONMENT=self-hosted, unless CLSIGMA_ALLOW_LOCAL_LIVE=YES
+- Continuous live real-money order loops are blocked by this gate.
 
 This is a technical safety gate, not investment advice and not a profit guarantee.
 """
@@ -56,19 +57,19 @@ def build_certificate(status: str, checks: dict[str, int], extra: dict[str, Any]
     h_live = sum(1 for passed in checks.values() if not passed)
     certificate: dict[str, Any] = {
         "protocol": "CLSIGMA_BINANCE_LIVE_GATE",
-        "version": "v1_locked_template",
+        "version": "v1_locked_template_continuous_guard",
         "status": status,
         "H_live": h_live,
         "checks": checks,
         "meaning": "H_live=0 means local safety checks passed; it does not mean profit, suitability, or market correctness.",
-        "boundary": "No secrets are printed. Default endpoint is test-only. Real orders require explicit multi-lock confirmation.",
+        "boundary": "No secrets are printed. Default endpoint is test-only. Continuous live real-money loops are blocked.",
     }
     if extra:
         certificate.update(extra)
     return certificate
 
 
-def validate_inputs() -> tuple[dict[str, str], dict[str, int], Decimal]:
+def validate_inputs() -> tuple[dict[str, str], dict[str, int], Decimal, dict[str, Any]]:
     symbol = env("SYMBOL", "BTCUSDT").upper()
     side = env("SIDE", "BUY").upper()
     quantity = decimal_env("QUANTITY", "0")
@@ -82,6 +83,10 @@ def validate_inputs() -> tuple[dict[str, str], dict[str, int], Decimal]:
     runner_ok = env("RUNNER_ENVIRONMENT") == "self-hosted" or bool_yes("CLSIGMA_ALLOW_LOCAL_LIVE")
     key_present = bool(env("BINANCE_API_KEY"))
     secret_present = bool(env("BINANCE_SECRET_KEY"))
+    kill_switch_enabled = bool_yes("KILL_SWITCH_ENABLED")
+    continuous_loop_requested = bool_yes("AUTONOMOUS_LIVE_LOOP")
+    real_endpoint = endpoint == "/api/v3/order"
+    live_real_order = live_enabled and real_submission and real_endpoint
     order_value = quantity * price
 
     checks = {
@@ -97,6 +102,8 @@ def validate_inputs() -> tuple[dict[str, str], dict[str, int], Decimal]:
         "H_human_confirmation_for_live": int((not live_enabled) or human_confirmation),
         "H_self_hosted_or_local_override": int((not live_enabled) or runner_ok),
         "H_real_order_double_lock": int((endpoint != "/api/v3/order") or (live_enabled and real_submission and human_confirmation)),
+        "H_kill_switch_for_live": int((not live_real_order) or kill_switch_enabled),
+        "H_no_continuous_live_order_loop": int(not (continuous_loop_requested and live_real_order)),
     }
 
     params = {
@@ -111,7 +118,13 @@ def validate_inputs() -> tuple[dict[str, str], dict[str, int], Decimal]:
         "newClientOrderId": env("CLIENT_ORDER_ID", f"CLSIGMA_{int(time.time())}"),
         "endpoint": endpoint,
     }
-    return params, checks, order_value
+    metadata = {
+        "allowed_symbols": sorted(allowed_symbols),
+        "kill_switch_enabled": kill_switch_enabled,
+        "continuous_loop_requested": continuous_loop_requested,
+        "live_real_order": live_real_order,
+    }
+    return params, checks, order_value, metadata
 
 
 def submit_signed_request(params: dict[str, str]) -> dict[str, Any]:
@@ -132,7 +145,7 @@ def submit_signed_request(params: dict[str, str]) -> dict[str, Any]:
 
 
 def main() -> int:
-    params, checks, order_value = validate_inputs()
+    params, checks, order_value, metadata = validate_inputs()
     h_live = sum(1 for passed in checks.values() if not passed)
     endpoint = params["endpoint"]
     live_enabled = bool_yes("LIVE_TRADING_ENABLED")
@@ -148,16 +161,18 @@ def main() -> int:
         "mode": "LIVE" if live_enabled else "DRY_RUN",
     }
 
+    extra = {"intent": safe_public, "runtime_metadata": metadata}
+
     if h_live != 0:
-        print(json.dumps(build_certificate("BLOCKED", checks, {"intent": safe_public}), ensure_ascii=False, indent=2))
+        print(json.dumps(build_certificate("BLOCKED", checks, extra), ensure_ascii=False, indent=2))
         return 2
 
     if not live_enabled:
-        print(json.dumps(build_certificate("DRY_RUN_ONLY", checks, {"intent": safe_public}), ensure_ascii=False, indent=2))
+        print(json.dumps(build_certificate("DRY_RUN_ONLY", checks, extra), ensure_ascii=False, indent=2))
         return 0
 
     response = submit_signed_request(dict(params))
-    print(json.dumps(build_certificate("SUBMITTED_TO_BINANCE_ENDPOINT", checks, {"intent": safe_public, "broker_response": response}), ensure_ascii=False, indent=2))
+    print(json.dumps(build_certificate("SUBMITTED_TO_BINANCE_ENDPOINT", checks, {**extra, "broker_response": response}), ensure_ascii=False, indent=2))
     return 0 if 200 <= int(response.get("http_status", 0)) < 300 else 3
 
 
